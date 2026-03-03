@@ -5,7 +5,7 @@ class DoubleConv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super().__init__()
 
-        self.net = nn.Sequential(
+        self.convnet = nn.Sequential(
             nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
@@ -13,8 +13,9 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
         )
+
     def forward(self, x):
-        return self.net(x)
+        return self.convnet(x)
 
 class UNet2D(nn.Module):
     def __init__(self, in_channels=4, num_classes=4, base=32):
@@ -47,22 +48,23 @@ class UNet2D(nn.Module):
         d2 = self.down2(self.pool1(d1))
         d3 = self.down3(self.pool2(d2))
         d4 = self.down4(self.pool3(d3))
+
         b  = self.bottleneck(self.pool4(d4))
 
         u4 = self.up4(b)
-        u4 = torch.cat([u4, d4], dim=1)
-        u4 = self.conv4(u4)
+        u4_skip = torch.cat([u4, d4], dim=1)
+        u4 = self.conv4(u4_skip)
 
         u3 = self.up3(u4)
-        u3 = torch.cat([u3, d3], dim=1)
-        u3 = self.conv3(u3)
+        u3_skip = torch.cat([u3, d3], dim=1)
+        u3 = self.conv3(u3_skip)
 
         u2 = self.up2(u3)
-        u2 = torch.cat([u2, d2], dim=1)
-        u2 = self.conv2(u2)
+        u2_skip = torch.cat([u2, d2], dim=1)
+        u2 = self.conv2(u2_skip)
 
         u1 = self.up1(u2)
-        u1 = torch.cat([u1, d1], dim=1)
-        u1 = self.conv1(u1)
+        u1_skip = torch.cat([u1, d1], dim=1)
+        u1 = self.conv1(u1_skip)
 
         return self.out(u1)  
