@@ -55,9 +55,5 @@ Training can be executed by running:
 python train_unet.py
 ```
 
-Visualizing inference on test cases is effected by:
-```bash
-python inference.py
-```
 
 
