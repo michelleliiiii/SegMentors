@@ -35,7 +35,7 @@ https://www.cancerimagingarchive.net/collection/brats-peds/$0
 
 The data should be stored under the directory
 ```bash
-/path/to/SegMentors/raw_dataset
+/path/to/SegMentors/raw_data
 ```
 
 From which you may run:
