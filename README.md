@@ -40,6 +40,7 @@ The data should be stored under the directory
 
 From which you may run:
 ```bash
+cd eda
 python data_preprocessing.py
 ```
 
