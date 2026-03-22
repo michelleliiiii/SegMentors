@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from pathlib import Path
 from tqdm import tqdm
+from scipy.ndimage import binary_erosion, distance_transform_edt
 from unet2d import UNet2D
 
 
@@ -95,11 +96,11 @@ def mean_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
 
     for c in range(1, num_classes):
 
-        pred = (pred == c).float()
-        targ = (target == c).float()
+        pred_class = (pred == c).float()
+        targ_class = (target == c).float()
 
-        inter = (pred * targ).sum(dim=(1, 2))
-        denom = pred.sum(dim=(1, 2)) + targ.sum(dim=(1, 2))
+        inter = (pred_class * targ_class).sum(dim=(1, 2))
+        denom = pred_class.sum(dim=(1, 2)) + targ_class.sum(dim=(1, 2))
 
         dice = (2 * inter + eps) / (denom + eps)
         dices.append(dice)
@@ -125,6 +126,78 @@ def soft_dice_loss(logits, target, num_classes, eps=1e-6, exclude_bg=True):
     dice = (2 * inter + eps) / (denom + eps)
     return 1 - dice.mean()
 
+
+def mask_surface(mask):
+    '''
+    Expects: numpy mask
+
+    Outputs: boundary pixels for HD95 computation
+    '''
+    if mask.sum() == 0:
+        return mask.astype(bool)
+
+    eroded = binary_erosion(mask, structure=np.ones((3, 3)), border_value=0)
+    surface = mask.astype(bool) & (~eroded)
+    return surface
+
+def hd_95(pred_mask, targ_mask):
+    '''
+    Expects: prediction mask and target mask
+
+    Outputs: HD95 metric 
+    '''
+
+    pred_mask = pred_mask.astype(bool)
+    targ_mask = targ_mask.astype(bool)
+
+    if pred_mask.sum() == 0 and targ_mask.sum() == 0:
+        return 0.0
+
+    if pred_mask.sum() == 0 or targ_mask.sum() == 0:
+        return np.nan
+
+    pred_surface = mask_surface(pred_mask)
+    targ_surface = mask_surface(targ_mask)
+
+    dt_targ = distance_transform_edt(~targ_surface, sampling = (0.7, 0.7))
+    dt_pred = distance_transform_edt(~pred_surface, sampling = (0.7, 0.7))
+
+    pred_to_targ = dt_targ[pred_surface]
+    targ_to_pred = dt_pred[targ_surface]
+
+    all_dists = np.concatenate([pred_to_targ, targ_to_pred])
+
+    if all_dists.size == 0:
+        return 0.0
+
+    return float(np.percentile(all_dists, 95))
+
+@torch.no_grad()
+def mean_hd95(pred, target, num_classes):
+    '''
+    Expects: pred and target, and classes
+
+    Outputs: mean HD95 across all classes and samples
+    '''
+    pred_np = pred.detach().cpu().numpy()
+    targ_np = target.detach().cpu().numpy()
+
+    vals = []
+
+    for b in range(pred_np.shape[0]):
+        for c in range(1, num_classes):
+            pred_c = (pred_np[b] == c)
+            targ_c = (targ_np[b] == c)
+
+            hd = hd_95(pred_c, targ_c)
+
+            if not np.isnan(hd):
+                vals.append(hd)
+
+    if len(vals) == 0:
+        return 0.0
+
+    return float(np.mean(vals))
 
 def main():
 
@@ -182,6 +255,7 @@ def main():
         model.eval()
         vloss = 0.0
         vdice = 0.0
+        vhd95 = 0.0
         nseen = 0
 
         with torch.no_grad():
@@ -200,12 +274,14 @@ def main():
                 pred = torch.argmax(logits, dim=1)
                 bs = x.size(0)
                 vdice += mean_dice(pred, y, num_classes=num_classes, exclude_bg=True) * bs
+                vhd95 += mean_hd95(pred, y, num_classes=num_classes) * bs
                 nseen += bs
 
         val_loss = vloss / len(val_loader.dataset)
         val_dice = vdice / max(1, nseen)
+        val_hd95 = vhd95 / max(1, nseen)
 
-        print(f"Epoch {ep}: train_loss={train_loss:.4f} val_loss={val_loss:.4f} val_dice(excl_bg)={val_dice:.4f}")
+        print(f"Epoch {ep}: train_loss={train_loss:.4f} val_loss={val_loss:.4f} val_dice(excl_bg)={val_dice:.4f} val_hd95(excl_bg)={val_hd95:.4f}")
 
         if val_dice > best_val:
             best_val = val_dice
@@ -216,6 +292,7 @@ def main():
                     "num_classes": num_classes,
                     "base": base,
                     "best_val_dice": best_val,
+                    "best_val_hd95": val_hd95,
                 },
                 "unet2d_best.pt",
             )
