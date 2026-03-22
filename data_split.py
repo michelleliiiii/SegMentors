@@ -4,7 +4,7 @@ from random import Random
 import numpy as np
 import tqdm
 
-SRC_ROOT = Path("preprocessed_dataset")
+SRC_ROOT = Path("preprocessed_dataset/preprocessed_dataset")
 OUT_ROOT = Path("data")
 
 VAL_FRAC = 0.15

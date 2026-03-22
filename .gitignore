@@ -1,0 +1,56 @@
+# =========================
+# DATASETS (ignore contents, keep folders)
+# =========================
+
+raw_data/*
+!raw_data/.gitkeep
+
+preprocessed_dataset/*
+!preprocessed_dataset/.gitkeep
+
+data/*
+!data/.gitkeep
+
+
+# =========================
+# OUTPUTS / EXPERIMENTS
+# =========================
+
+checkpoints/*
+!checkpoints/.gitkeep
+
+logs/*
+!logs/.gitkeep
+
+outputs/*
+!outputs/.gitkeep
+
+
+# =========================
+# PYTHON
+# =========================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+# =========================
+# ENV / IDE
+# =========================
+
+.env
+.venv/
+venv/
+
+.vscode/
+.idea/
+
+
+# =========================
+# OS FILES
+# =========================
+
+.DS_Store
+Thumbs.db
