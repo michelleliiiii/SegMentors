@@ -5,8 +5,6 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 from sklearn.utils import resample
-from pathlib import Path
-
 
 
 def get_patient_list(root_dir):
@@ -167,8 +165,86 @@ def run_preprocessing(input_root, output_root, neg_ratio=0.1):
     print("Pre-processing complete. Manifest saved.")
 
 
+def patientwise_data_split(
+    input_csv_path,
+    output_csv_path,
+    train_frac=0.65,
+    valid_frac=0.15,
+    labeled_train_frac=[0.1, 0.2, 0.5]
+):
+    """
+    Generate patientwise data split where larger labeled percentages 
+    are inclusive of the smaller ones.
+
+    Args:
+        input_csv_path (str): Path to input dataset manifest file (.csv).
+        output_csv_path (str): Path to output file (.csv).
+        train_frac (float): The percentage of training set.
+        valid_frac (float): The percentage of validation set.
+        labeled_train_frac (list): List of floats (0.0 to 1.0).
+
+    Returns:
+        None: Writes to manifest CSV.
+    """
+    df = pd.read_csv(input_csv_path)
+
+    if 'patient_id' not in df.columns:
+        raise KeyError("The input CSV must contain a 'patient_id' column.")
+
+    # 1. Split Patients into Train, Valid, and Test
+    # .tolist() prevents the 'StringArray' shuffle warning
+    unique_patients = df['patient_id'].unique().tolist()
+    np.random.shuffle(unique_patients)
+
+    num_patients = len(unique_patients)
+    train_end = int(num_patients * train_frac)
+    valid_end = int(num_patients * (train_frac + valid_frac))
+
+    train_pts = unique_patients[:train_end]
+    valid_pts = set(unique_patients[train_end:valid_end])
+    test_pts = set(unique_patients[valid_end:])
+
+    # Map the main split
+    def assign_split(pid):
+        if pid in train_pts:
+            return 'train'
+        if pid in valid_pts:
+            return 'valid'
+        return 'test'
+
+    df['split'] = df['patient_id'].apply(assign_split)
+
+    # 2. Patient-wise Nested Labeling (Only for the Training set)
+    # We shuffle the train_pts list specifically
+    np.random.shuffle(train_pts)
+    sorted_fracs = sorted(labeled_train_frac)
+
+    for frac in sorted_fracs:
+        col_name = f'is_labeled_{int(frac * 100)}%'
+        
+        # Initialize column with empty values (None/NaN)
+        df[col_name] = np.nan
+        
+        # Determine which patients in the training set get labeled
+        num_to_label = int(len(train_pts) * frac)
+        labeled_pts_subset = set(train_pts[:num_to_label])
+
+        # Apply 1 for labeled, 0 for unlabeled ONLY for training rows
+        # Validation and Test rows remain NaN (blank in CSV)
+        df.loc[df['split'] == 'train', col_name] = df.loc[
+            df['split'] == 'train', 'patient_id'
+        ].apply(lambda x: 1 if x in labeled_pts_subset else 0)
+
+    # 3. Final cleanup and Save
+    # Converting to Int handles the 1.0/0.0 float issue, 
+    # but since we have NaNs, they will stay as floats/blanks in CSV.
+    df.to_csv(output_csv_path, index=False)
+    print(f"Patient-wise nested manifest saved to {output_csv_path}")
+    
+
 if __name__ == "__main__":
-    ROOT = Path(__file__).resolve().parents[1]
-    INPUT_ROOT = ROOT / "raw_data/Training"
-    OUTPUT_ROOT = ROOT / "preprocessed_data"
-    run_preprocessing(INPUT_ROOT, OUTPUT_ROOT, neg_ratio=0.1)
+    # INPUT_ROOT = r"raw_dataset\Training"
+    # OUTPUT_ROOT = r"data"
+    # run_preprocessing(INPUT_ROOT, OUTPUT_ROOT, neg_ratio=0.1)
+
+    patientwise_data_split('SegMentors\data\manifest.csv', 'nested_split.csv')
