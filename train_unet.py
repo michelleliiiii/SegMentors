@@ -8,6 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 from scipy.ndimage import binary_erosion, distance_transform_edt
 from unet2d import UNet2D
+import csv
 
 
 def get_device():
@@ -38,15 +39,30 @@ class NPYFolderDataset(Dataset):
 
         if not self.image_dir.exists() or not self.mask_dir.exists():
             raise FileNotFoundError(f"Missing folders: {self.image_dir} or {self.mask_dir}")
+        
+        labeled = None
+        if split == 'train':
+            labeled = set()
+            with open("ssl_split_manifest.csv", "r", newline = "") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["split"] == "train" and row["label_status"] == "labeled":
+                        labeled.add(row["case_id"])
 
         image_files = sorted(self.image_dir.glob("*.npy"))
 
         pairs = []
         for path in image_files:
 
-            if path.name.endswith("__img.npy"):
-                mask_name = path.name.replace("__img.npy", "__mask.npy")
+            if not path.name.endswith("__img.npy"):
+                continue
 
+            if split == "train":
+                case_id = "-".join(path.stem.split("__")[0].split("-")[:4])
+                if case_id not in labeled:
+                    continue
+
+            mask_name = path.name.replace("__img.npy", "__mask.npy")
             mask_path = self.mask_dir / mask_name
 
             if mask_path.exists():
@@ -199,6 +215,12 @@ def mean_hd95(pred, target, num_classes):
 
     return float(np.mean(vals))
 
+def count_unique_patients(dataset):
+    return len({
+        "-".join(path.stem.split("__")[0].split("-")[:4])
+        for path, _ in dataset.pairs
+    })
+
 def main():
 
     #Get device
@@ -210,7 +232,7 @@ def main():
     in_channels = 4
     base = 32
     batch_size = 8
-    epochs = 20
+    epochs = 50
     lr = 1e-3
     w_ce = 0.5
     w_dice = 0.5
@@ -218,9 +240,14 @@ def main():
     #Load datasets and create dataloaders
     train = NPYFolderDataset(root="data", split="train", normalize="zscore_per_channel")
     val = NPYFolderDataset(root="data", split="val",   normalize="zscore_per_channel")
+    print("Train patients:", count_unique_patients(train))
+    print("Val patients:", count_unique_patients(val))
+
 
     train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=0)
     val_loader   = DataLoader(val,   batch_size=batch_size, shuffle=False, num_workers=0)
+
+
 
     #Define model, call unet2d.py 
     model = UNet2D(in_channels=in_channels, num_classes=num_classes, base=base).to(device)
