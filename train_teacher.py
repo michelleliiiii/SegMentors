@@ -13,18 +13,21 @@ from ssl_data import (
 )
 
 
-def main():
+def train_model(params=None):
     device = get_device()
     print("Device:", device)
 
     manifest_path = "ssl_split_manifest.csv"
 
+    params = params or {}
+
     num_classes = 5
     in_channels = 4
     base = 32
-    batch_size = 8
-    epochs = 20
-    lr = 1e-3
+    batch_size = params.get("batch_size", 8)
+    epochs = params.get("epochs", 33)
+    lr = params.get("learning_rate", 4.6549492616937974e-4)
+    weight_decay = params.get("weight_decay", 2.7858130122219456e-4)
     w_ce = 0.5
     w_dice = 0.5
 
@@ -50,7 +53,7 @@ def main():
 
     model = UNet2D(in_channels=in_channels, num_classes=num_classes, base=base).to(device)
     ce_criterion = nn.CrossEntropyLoss()
-    optim = torch.optim.Adam(model.parameters(), lr=lr)
+    optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     best_val = -1.0
 
@@ -122,6 +125,11 @@ def main():
             print("teacher_best.pt saved")
 
     print(f"Best teacher val Dice: {best_val:.4f}")
+    return best_val
+
+
+def main():
+    train_model()
 
 
 if __name__ == "__main__":

@@ -11,7 +11,11 @@ preprocessed_dataset/*
 data/*
 !data/.gitkeep
 
+pseudo_label_viz/ 
 
+input_debug_viz/
+
+teacher_probability_maps/
 # =========================
 # OUTPUTS / EXPERIMENTS
 # =========================
@@ -25,7 +29,12 @@ logs/*
 outputs/*
 !outputs/.gitkeep
 
+visualization.py 
 
+debug_inputs.py
+
+teacher_probability_maps.py
+run_teacher_probability_maps.py
 # =========================
 # PYTHON
 # =========================
