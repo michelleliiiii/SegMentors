@@ -3,7 +3,10 @@ import torch.nn as nn
 
 
 class DoubleConv(nn.Module):
+    """Apply two convolution-BN-ReLU blocks in sequence."""
+
     def __init__(self, in_ch, out_ch):
+        """Initialize the double-convolution block."""
         super().__init__()
         self.convnet = nn.Sequential(
             nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
@@ -15,11 +18,22 @@ class DoubleConv(nn.Module):
         )
 
     def forward(self, x):
+        """Apply the stacked convolutional block to the input tensor."""
         return self.convnet(x)
 
 
 class UNet2D(nn.Module):
+    """Implement a 2D U-Net with a replaceable output head."""
+
     def __init__(self, in_channels=4, num_classes=4, base=32, head_channels=None):
+        """Initialize the encoder, decoder, and initial prediction head.
+
+        Args:
+            in_channels (int): Number of MRI input channels.
+            num_classes (int): Default number of output channels/classes.
+            base (int): Base feature width for the network.
+            head_channels (int | None): Optional override for head output width.
+        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -50,6 +64,7 @@ class UNet2D(nn.Module):
         self.head = nn.Conv2d(base, self.head_channels, 1)
 
     def encode(self, x):
+        """Encode the input and return the bottleneck plus skip connections."""
         d1 = self.down1(x)
         d2 = self.down2(self.pool1(d1))
         d3 = self.down3(self.pool2(d2))
@@ -58,6 +73,7 @@ class UNet2D(nn.Module):
         return bottleneck, (d1, d2, d3, d4)
 
     def decode(self, bottleneck, skips):
+        """Decode bottleneck features using the stored U-Net skip connections."""
         d1, d2, d3, d4 = skips
 
         u4 = self.up4(bottleneck)
@@ -74,14 +90,17 @@ class UNet2D(nn.Module):
         return u1
 
     def forward_features(self, x):
+        """Run the encoder-decoder path and return decoder features."""
         bottleneck, skips = self.encode(x)
         return self.decode(bottleneck, skips)
 
     def forward(self, x):
+        """Generate task-specific predictions from the input tensor."""
         features = self.forward_features(x)
         return self.head(features)
 
     def replace_head(self, out_channels):
+        """Swap the prediction head for a new output dimensionality."""
         self.head_channels = out_channels
         self.head = nn.Conv2d(self.base, out_channels, 1)
         return self
