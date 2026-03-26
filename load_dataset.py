@@ -88,7 +88,7 @@ class BrainTumorNPYDataset(Dataset):
             "image_path": str(sample["image_path"]),
         }
 
-        if sample["mask_path"] is not None:
+        if self.require_masks and sample["mask_path"] is not None:
             mask = np.load(sample["mask_path"])
             item["mask"] = torch.from_numpy(mask).long()
             item["mask_path"] = str(sample["mask_path"])

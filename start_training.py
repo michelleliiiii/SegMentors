@@ -172,6 +172,7 @@ def run_pipeline(args):
 
     finetune_optimizer = torch.optim.Adam(model.parameters(), lr=args.finetune_lr)
     best_val_dice = -1.0
+    epochs_without_improvement = 0
     best_finetune_path = output_dir / "finetune_best.pt"
 
     print("Starting supervised fine-tuning on labeled training cases only.")
@@ -200,6 +201,7 @@ def run_pipeline(args):
 
         if val_metrics["mean_dice"] > best_val_dice:
             best_val_dice = val_metrics["mean_dice"]
+            epochs_without_improvement = 0
             U.save_checkpoint(
                 best_finetune_path,
                 model,
@@ -214,9 +216,23 @@ def run_pipeline(args):
                     "class_names": CLASS_NAMES,
                 },
             )
+        else:
+            epochs_without_improvement += 1
+            print(
+                "No validation Dice improvement for "
+                f"{epochs_without_improvement} epoch(s)."
+            )
+
+            if epochs_without_improvement >= args.early_stopping_patience:
+                print(
+                    "Early stopping triggered after "
+                    f"{args.early_stopping_patience} consecutive epochs without improvement."
+                )
+                break
 
     finetune_state = torch.load(best_finetune_path, map_location=device)
     model.load_state_dict(finetune_state["model"])
+    print(f"Best validation Dice during fine-tuning: {best_val_dice:.4f}")
 
     prediction_dir = output_dir / "test_predictions"
     test_metrics = T.run_segmentation_validation(
@@ -251,6 +267,7 @@ def build_arg_parser():
     parser.add_argument("--finetune-epochs", type=int, default=30)
     parser.add_argument("--pretrain-lr", type=float, default=1e-3)
     parser.add_argument("--finetune-lr", type=float, default=1e-3)
+    parser.add_argument("--early-stopping-patience", type=int, default=5)
     parser.add_argument("--w-ce", type=float, default=0.5)
     parser.add_argument("--w-dice", type=float, default=0.5)
     parser.add_argument("--mask-ratio", type=float, default=0.5)
