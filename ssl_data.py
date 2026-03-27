@@ -45,6 +45,7 @@ class NPYFolderDataset(Dataset):
         manifest_path=None,
         label_status=None,
         return_mask=True,
+        return_case_id=False,
     ):
         self.root = Path(root)
         self.split = split
@@ -52,6 +53,7 @@ class NPYFolderDataset(Dataset):
         self.mask_dir = self.root / split / "masks"
         self.normalize = normalize
         self.return_mask = return_mask
+        self.return_case_id = return_case_id
 
         if not self.image_dir.exists():
             raise FileNotFoundError(f"Missing folder: {self.image_dir}")
@@ -100,6 +102,7 @@ class NPYFolderDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path, mask_path = self.pairs[idx]
+        case_id = extract_case_id(image_path.name)
 
         x = np.load(image_path)
 
@@ -119,15 +122,19 @@ class NPYFolderDataset(Dataset):
             x = (x - mean) / std
 
         if not self.return_mask:
+            if self.return_case_id:
+                return x, case_id
             return x
 
         y = np.load(mask_path)
         y = torch.from_numpy(y).long()
+        if self.return_case_id:
+            return x, y, case_id
         return x, y
 
 
 @torch.no_grad()
-def mean_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
+def per_class_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
     dices = []
     start_class = 1 if exclude_bg else 0
 
@@ -141,7 +148,18 @@ def mean_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
         dice = (2 * inter + eps) / (denom + eps)
         dices.append(dice)
 
-    return torch.stack(dices, dim=1).mean().item()
+    return torch.stack(dices, dim=1)
+
+
+@torch.no_grad()
+def mean_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
+    return per_class_dice(
+        pred,
+        target,
+        num_classes=num_classes,
+        eps=eps,
+        exclude_bg=exclude_bg,
+    ).mean().item()
 
 
 def soft_dice_loss(logits, target, num_classes, eps=1e-6, exclude_bg=True):
@@ -166,6 +184,14 @@ def masked_cross_entropy(logits, target, valid_mask):
     return (per_pixel * valid_mask).sum() / denom
 
 
+def masked_soft_cross_entropy(logits, target_probs, valid_mask):
+    log_probs = F.log_softmax(logits, dim=1)
+    per_pixel = -(target_probs * log_probs).sum(dim=1)
+    valid_mask = valid_mask.float()
+    denom = valid_mask.sum().clamp_min(1.0)
+    return (per_pixel * valid_mask).sum() / denom
+
+
 def masked_soft_dice_loss(logits, target, valid_mask, num_classes, eps=1e-6, exclude_bg=True):
     probs = torch.softmax(logits, dim=1)
     t1h = F.one_hot(target, num_classes).permute(0, 3, 1, 2).float()
@@ -178,6 +204,21 @@ def masked_soft_dice_loss(logits, target, valid_mask, num_classes, eps=1e-6, exc
 
     inter = (probs * t1h * valid_mask).sum(dim=(0, 2, 3))
     denom = (probs * valid_mask).sum(dim=(0, 2, 3)) + (t1h * valid_mask).sum(dim=(0, 2, 3))
+    dice = (2 * inter + eps) / (denom + eps)
+
+    return 1.0 - dice.mean()
+
+
+def masked_soft_dice_loss_probs(logits, target_probs, valid_mask, eps=1e-6, exclude_bg=True):
+    probs = torch.softmax(logits, dim=1)
+    valid_mask = valid_mask.unsqueeze(1).float()
+
+    if exclude_bg:
+        probs = probs[:, 1:]
+        target_probs = target_probs[:, 1:]
+
+    inter = (probs * target_probs * valid_mask).sum(dim=(0, 2, 3))
+    denom = (probs * valid_mask).sum(dim=(0, 2, 3)) + (target_probs * valid_mask).sum(dim=(0, 2, 3))
     dice = (2 * inter + eps) / (denom + eps)
 
     return 1.0 - dice.mean()

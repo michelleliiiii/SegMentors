@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from utils import set_seed
 
 from unet2d import UNet2D
 from ssl_data import (
@@ -14,12 +15,18 @@ from ssl_data import (
 
 
 def train_model(params=None):
+    params = params or {}
+    seed = params.get("seed", 42)
+    set_seed(seed)
+    if torch.backends.cudnn.is_available():
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
     device = get_device()
     print("Device:", device)
+    print("Seed:", seed)
 
     manifest_path = "ssl_split_manifest.csv"
-
-    params = params or {}
 
     num_classes = 5
     in_channels = 4
@@ -30,6 +37,7 @@ def train_model(params=None):
     weight_decay = params.get("weight_decay", 2.7858130122219456e-4)
     w_ce = 0.5
     w_dice = 0.5
+    save_path = params.get("save_path", "teacher_best.pt")
 
     train = NPYFolderDataset(
         root="data",
@@ -115,14 +123,14 @@ def train_model(params=None):
         if val_dice > best_val:
             best_val = val_dice
             save_baseline_style_checkpoint(
-                "teacher_best.pt",
+                save_path,
                 model,
                 in_channels=in_channels,
                 num_classes=num_classes,
                 base=base,
                 best_val_dice=best_val,
             )
-            print("teacher_best.pt saved")
+            print(f"{save_path} saved")
 
     print(f"Best teacher val Dice: {best_val:.4f}")
     return best_val

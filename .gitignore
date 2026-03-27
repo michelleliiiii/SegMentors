@@ -35,6 +35,17 @@ debug_inputs.py
 
 teacher_probability_maps.py
 run_teacher_probability_maps.py
+student_trial_1_best.pt 
+student_trial_2_best.pt 
+student_trial_3_best.pt 
+student_trial_4_best.pt 
+student_trial_5_best.pt 
+student_trial_6_best.pt 
+student_trial_7_best.pt 
+student_trial_8_best.pt 
+student_trial_9_best.pt 
+student_trial_10_best.pt 
+compare_teacher_student.py
 # =========================
 # PYTHON
 # =========================
@@ -60,6 +71,6 @@ venv/
 # =========================
 # OS FILES
 # =========================
-
+experiment_outputs/ 
 .DS_Store
 Thumbs.db
