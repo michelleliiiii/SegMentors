@@ -2,7 +2,7 @@
 
 1. make sure there is a correct pytorch version
 2. pip install nnunetv2
-3. setup the environment variables, check by `echo %variable_name%`
+3. setup the environment variables every time before running, check variables by `echo %variable_name%`
 ``` bash
 export nnUNet_raw="/path/nnUNet_raw"
 export nnUNet_preprocessed="/path/nnUNet_preprocessed"
