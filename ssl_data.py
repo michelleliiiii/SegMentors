@@ -144,9 +144,7 @@ def per_class_dice(pred, target, num_classes, eps=1e-6, exclude_bg=True):
 
         inter = (pred_c * targ_c).sum(dim=(1, 2))
         denom = pred_c.sum(dim=(1, 2)) + targ_c.sum(dim=(1, 2))
-
-        dice = (2 * inter + eps) / (denom + eps)
-        dices.append(dice)
+        dices.append((2 * inter + eps) / (denom + eps))
 
     return torch.stack(dices, dim=1)
 
@@ -177,7 +175,7 @@ def soft_dice_loss(logits, target, num_classes, eps=1e-6, exclude_bg=True):
     return 1.0 - dice.mean()
 
 
-def masked_cross_entropy(logits, target, valid_mask):
+def masked_cross_entropy(logits, target, valid_mask): 
     per_pixel = F.cross_entropy(logits, target, reduction="none")
     valid_mask = valid_mask.float()
     denom = valid_mask.sum().clamp_min(1.0)
