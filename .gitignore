@@ -1,4 +1,6 @@
-data/
+data/test
+data/val
+data/train
 __pycache__/
 outputs/label_15_early_stop/finetune_best.pt
 outputs/label_15_early_stop/pretrain_best.pt
