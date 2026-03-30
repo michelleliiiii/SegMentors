@@ -1,3 +1,5 @@
 /nnUNet_raw
 /nnUnet_preprocessed
-/nnUNet_results
+/nnUNet_results/Dataset100_BrainTumor/nnUNetTrainer__nnUNetPlans__2d/fold_0/checkpoint_best.pth
+/nnUNet_results/Dataset100_BrainTumor/nnUNetTrainer__nnUNetPlans__2d/fold_0/checkpoint_final.pth
+/nnUNet_results/Dataset100_BrainTumor/nnUNetTrainer__nnUNetPlans__2d/fold_0/checkpoint_latest.pth

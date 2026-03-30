@@ -1,0 +1,18 @@
+{
+    "channel_names": {
+        "0": "T1",
+        "1": "T1CE",
+        "2": "T2",
+        "3": "FLAIR"
+    },
+    "labels": {
+        "background": 0,
+        "ET": 1,
+        "NET": 2,
+        "CC": 3,
+        "ED": 4
+    },
+    "numTraining": 1969,
+    "file_ending": ".nii.gz",
+    "overwrite_image_reader_writer": "SimpleITKIO"
+}

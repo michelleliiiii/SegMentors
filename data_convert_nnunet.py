@@ -1,20 +1,21 @@
-from pathlib import Path
-import numpy as np
 import nibabel as nib
+import numpy as np
+from pathlib import Path
 
 
-def save_array_as_nifti(array: np.ndarray, out_path: Path, affine: np.ndarray = None) -> None:
+def save_array_as_nifti(
+    array: np.ndarray,
+    out_path: Path,
+    affine: np.ndarray = None
+) -> None:
     """
     Save a numpy array as .nii.gz using nibabel.
 
-    Parameters
-    ----------
-    array : np.ndarray
-        Array to save. For 2D slices, this should usually be expanded to (H, W, 1).
-    out_path : Path
-        Output .nii.gz path.
-    affine : np.ndarray, optional
-        4x4 affine matrix. Identity is used if not provided.
+    Args:
+        array (np.ndarray): array to save. For 2D slices, this should usually
+            be expanded to (H, W, 1).
+        out_path (Path): output .nii.gz path.
+        affine (np.ndarray): 4x4 affine matrix. Identity used if not provided.
     """
     if affine is None:
         affine = np.eye(4, dtype=np.float32)
@@ -49,16 +50,24 @@ def convert_one_case(
     seg = np.load(seg_npy_path)
 
     if img.ndim != 3:
-        raise ValueError(f"Expected image shape (H, W, 4), got {img.shape} for {img_npy_path}")
+        raise ValueError(
+            f"Expected image shape (H, W, 4), got {img.shape} "
+            f"for {img_npy_path}"
+        )
     if seg.ndim != 2:
-        raise ValueError(f"Expected seg shape (H, W), got {seg.shape} for {seg_npy_path}")
+        raise ValueError(
+            f"Expected seg shape (H, W), got {seg.shape} for {seg_npy_path}"
+        )
     if img.shape[:2] != seg.shape:
         raise ValueError(
-            f"Image and segmentation spatial shape mismatch: {img.shape[:2]} vs {seg.shape} "
-            f"for {img_npy_path} and {seg_npy_path}"
+            f"Image and segmentation spatial shape mismatch: {img.shape[:2]} "
+            f"vs {seg.shape} for {img_npy_path} and {seg_npy_path}"
         )
     if img.shape[2] != 4:
-        raise ValueError(f"Expected 4 channels in image, got {img.shape[2]} for {img_npy_path}")
+        raise ValueError(
+            f"Expected 4 channels in image, got {img.shape[2]} "
+            f"for {img_npy_path}"
+        )
 
     images_out_dir.mkdir(parents=True, exist_ok=True)
     labels_out_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +76,7 @@ def convert_one_case(
     for c in range(4):
         modality = img[:, :, c].astype(np.float32)
 
-        # Expand to (H, W, 1) so it is saved as a 3D NIfTI with singleton depth
+        # Expand to (H, W, 1) to save as 3D NIfTI with singleton depth
         modality_3d = modality[:, :, None]
 
         out_img_path = images_out_dir / f"{case_id}_{c:04d}.nii.gz"
@@ -89,15 +98,10 @@ def convert_dataset(
     seg_suffix: str = "_mask.npy"
 ) -> None:
     """
-    Convert a whole dataset of 2D multi-modal slices to nnU-Net style NIfTI files.
+    Convert a whole dataset of 2D multi-modal slices to nnU-Net NIfTI files.
 
     Matching rule:
-        image_dir/imagename_image.npy  <->  seg_dir/imagename_mask.npy
-
-    Output structure:
-        out_root/
-            imagesTr/
-            labelsTr/
+        image_dir/imagename_image.npy <-> seg_dir/imagename_mask.npy
     """
     image_dir = Path(image_dir)
     seg_dir = Path(seg_dir)
@@ -108,7 +112,9 @@ def convert_dataset(
 
     image_files = sorted(image_dir.glob(f"*{image_suffix}"))
     if not image_files:
-        raise FileNotFoundError(f"No image files ending with {image_suffix} found in {image_dir}")
+        raise FileNotFoundError(
+            f"No image files ending with {image_suffix} found in {image_dir}"
+        )
 
     converted = 0
     missing_seg = []
@@ -119,7 +125,7 @@ def convert_dataset(
         if not img_name.endswith(image_suffix):
             continue
 
-        # Remove "_image.npy" to get the base case name
+        # Remove suffix to get the base case name
         base_name = img_name[:-len(image_suffix)]
 
         # Match with "imagename_mask.npy"
@@ -145,13 +151,12 @@ def convert_dataset(
     if missing_seg:
         print(f"Missing segmentation for {len(missing_seg)} image files:")
         for x in missing_seg[:10]:
-            print("  ", x)
+            print(f"  {x}")
         if len(missing_seg) > 10:
             print("  ...")
 
 
 if __name__ == "__main__":
-    # Example usage
     convert_dataset(
         image_dir=r"SegMentors\data\test\images",
         seg_dir=r"SegMentors\data\test\masks",
