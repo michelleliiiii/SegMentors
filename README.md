@@ -148,4 +148,4 @@ After a standard run, the main artifacts are:
 
 ## AI Statement
 
-OpenAI Codex was used in this branch for generating code and for preparing project documentation, including this README. All generated content should be reviewed and validated by the project authors before submission or deployment.
+OpenAI Codex was used in this branch for generating code and for preparing project documentation, including this README. All generated content has been reviewed and validated by the project authors before submission and deployment.
