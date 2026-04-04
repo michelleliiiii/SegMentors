@@ -14,7 +14,9 @@ This branch provides a streamlined pipeline for analyzing and processing Brats-P
 ### Directory Structure
 - `/data`: Stores raw input data, manifest files, and output statistics.
 
-- `/eda`: Contains core processing and analysis scripts:
+- `/eda`: Contains core processing and analysis scripts.
+
+- `/visuals`: Contains visuals generated.
 
 - `data_preprocessing.py`: Orchestrates the slice extraction and saving process.
 

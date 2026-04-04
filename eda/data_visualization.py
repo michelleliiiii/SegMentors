@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
 import numpy as np
 
 
@@ -93,9 +94,27 @@ def visualize_multimodal_slice(
 
     # Overlay panel
     base = display_imgs[overlay_modality]
+
+    # (background + 4 tumor regions)
+    colors = [
+        (0, 0, 0, 0),      # 0 = background (transparent)
+        (1, 0, 0, 1),      # 1 = red
+        (0, 1, 0, 1),      # 2 = green
+        (0, 0, 1, 1),      # 3 = blue
+        (1, 1, 0, 1),      # 4 = yellow
+    ]
+
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(-0.5, 5.5, 1), cmap.N)
+
+    # overlay
     axes[4].imshow(base, cmap="gray")
     axes[4].imshow(
-        mask, cmap="jet", alpha=mask_alpha, interpolation="nearest"
+        mask,
+        cmap=cmap,
+        norm=norm,
+        alpha=mask_alpha,
+        interpolation="nearest"
     )
     axes[4].set_title(
         f"{modality_names[overlay_modality]} + Mask", fontsize=11
@@ -115,9 +134,69 @@ def visualize_multimodal_slice(
     plt.show()
 
 
+def find_good_slices(
+    folder_path,
+    min_pixels_per_class=50,   # threshold for "good distribution"
+    required_classes=(1, 2, 3, 4),
+    axis=0                     # slicing axis (0 = z for (Z,H,W))
+):
+    """
+    Iterate through .npy segmentation files and find slices that
+    contain all required classes with sufficient pixel counts.
+    """
+
+    folder = Path(folder_path)
+    files = sorted(folder.glob("*.npy"))
+
+    for f in files:
+        seg = np.load(f)  # expected shape (Z, H, W) or similar
+
+        # move slicing axis to front for uniform iteration
+        seg = np.moveaxis(seg, axis, 0)
+
+        for i in range(seg.shape[0]):
+            slice_ = seg[i]
+
+            # count pixels for each class
+            valid = True
+            counts = {}
+
+            for c in required_classes:
+                count = np.sum(slice_ == c)
+                counts[c] = int(count)
+
+                if count < min_pixels_per_class:
+                    valid = False
+                    break
+
+            if valid:
+                print(f"{f.name} | slice {i} | counts: {counts}")
+                break  # stop after first good slice per file
+
+
 if __name__ == "__main__":
     visualize_multimodal_slice(
-        image_npy_path="data/BraTS-PED-00001-000/BraTS-PED-00001-000_s85_img.npy",
-        mask_npy_path="data/BraTS-PED-00001-000/BraTS-PED-00001-000_s85_seg.npy",
+        image_npy_path=r"self_supervised_learning\SegMentors\data\test\images\BraTS-PED-00034-000__000003__img.npy",
+        mask_npy_path=r"self_supervised_learning\SegMentors\data\test\masks\BraTS-PED-00034-000__000003__mask.npy",
         output_path="output.png"
     )
+    
+    # find_good_slices(
+    #     folder_path=r"self_supervised_learning\SegMentors\data\test\masks",
+    #     min_pixels_per_class=10
+    # )
+
+    # import nibabel as nib
+
+    # nii_path = r"eda\SegMentors\visuals\BraTS-PED-00034-000__000003_nnunet.nii.gz"
+    # npy_path = r"eda\SegMentors\visuals\BraTS-PED-00034-000__000003_nnunet.npy"
+
+    # img = nib.load(nii_path)
+    # data = img.get_fdata()   # float64
+
+    # # optional: cast to smaller dtype
+    # data = data.astype(np.float32)
+    # data = np.squeeze(data, axis=None)
+    # print(data.shape)
+
+    # np.save(npy_path, data)
