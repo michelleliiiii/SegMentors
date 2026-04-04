@@ -2,13 +2,19 @@ import argparse
 import contextlib
 from pathlib import Path
 import sys
+
 import torch
 
-from unet2d import UNet2D
+
+SRC_DIR = Path(__file__).resolve().parent / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 import load_dataset as D
-import pretraining as P
 import fine_tuning as T
 from fine_tuning import CLASS_NAMES
+import pretraining as P
+from unet2d import UNet2D
 import utils as U
 
 PRETEXT_TASKS = {
@@ -145,7 +151,10 @@ def run_pipeline(args):
             epoch_seed=args.seed * 2000 + epoch,
         )
 
-        print(f"Pretrain epoch {epoch}: train_loss={train_loss:.4f} val_loss={val_loss:.4f}")
+        print(
+            f"Pretrain epoch {epoch}: "
+            f"train_loss={train_loss:.4f} val_loss={val_loss:.4f}"
+        )
         history["pretrain_train_loss"].append(train_loss)
         history["pretrain_val_loss"].append(val_loss)
 
@@ -195,7 +204,10 @@ def run_pipeline(args):
             args.w_dice,
         )
 
-        print(f"Finetune epoch {epoch}: train_loss={train_loss:.4f} {U.format_seg_metrics(val_metrics)}")
+        print(
+            f"Finetune epoch {epoch}: "
+            f"train_loss={train_loss:.4f} {U.format_seg_metrics(val_metrics)}"
+        )
         history["finetune_train_loss"].append(train_loss)
         history["finetune_val_loss"].append(val_metrics["loss"])
 
@@ -226,7 +238,8 @@ def run_pipeline(args):
             if epochs_without_improvement >= args.early_stopping_patience:
                 print(
                     "Early stopping triggered after "
-                    f"{args.early_stopping_patience} consecutive epochs without improvement."
+                    f"{args.early_stopping_patience} consecutive epochs "
+                    "without improvement."
                 )
                 break
 
@@ -254,7 +267,9 @@ def run_pipeline(args):
 
 def build_arg_parser():
     """Build the command-line parser for the SSL training workflow."""
-    parser = argparse.ArgumentParser(description="Self-supervised 2D U-Net training pipeline")
+    parser = argparse.ArgumentParser(
+        description="Self-supervised 2D U-Net training pipeline"
+    )
     parser.add_argument("--data-root", default="data")
     parser.add_argument("--manifest-csv", default="ssl_split_manifest_25.csv")
     parser.add_argument("--in-channels", type=int, default=4)
@@ -272,7 +287,11 @@ def build_arg_parser():
     parser.add_argument("--w-dice", type=float, default=0.5)
     parser.add_argument("--mask-ratio", type=float, default=0.5)
     parser.add_argument("--patch-size", type=int, default=16)
-    parser.add_argument("--pretext-task", choices=sorted(PRETEXT_TASKS.keys()), default="cross_modal")
+    parser.add_argument(
+        "--pretext-task",
+        choices=sorted(PRETEXT_TASKS.keys()),
+        default="cross_modal",
+    )
     parser.add_argument("--output-dir", default="outputs/label_25_early_stop")
     return parser
 
@@ -292,7 +311,9 @@ def main():
     with log_path.open("a", encoding="utf-8") as log_file:
         stdout_tee = TeeStream(sys.stdout, log_file)
         stderr_tee = TeeStream(sys.stderr, log_file)
-        with contextlib.redirect_stdout(stdout_tee), contextlib.redirect_stderr(stderr_tee):
+        with contextlib.redirect_stdout(stdout_tee), contextlib.redirect_stderr(
+            stderr_tee
+        ):
             print("=" * 80)
             print("Starting training run")
             print(f"Output directory: {output_dir}")

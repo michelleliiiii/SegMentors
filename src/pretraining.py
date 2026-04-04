@@ -1,4 +1,3 @@
-from pathlib import Path
 import torch
 from tqdm import tqdm
 
@@ -48,7 +47,9 @@ def build_cross_modal_mask(batch, mask_ratio=0.5, patch_size=16, generator=None)
     return masked_input, batch, loss_mask
 
 
-def build_random_channel_dropout_mask(batch, mask_ratio=0.5, patch_size=16, generator=None):
+def build_random_channel_dropout_mask(
+    batch, mask_ratio=0.5, patch_size=16, generator=None
+):
     """Randomly remove pixels from one channel to form a simpler pretext task."""
     if generator is None:
         generator = torch.Generator(device=batch.device if batch.is_cuda else "cpu")
@@ -60,8 +61,18 @@ def build_random_channel_dropout_mask(batch, mask_ratio=0.5, patch_size=16, gene
     masked_pixels = max(1, int(total_pixels * mask_ratio))
 
     for sample_idx in range(bsz):
-        modality = int(torch.randint(0, channels, (1,), generator=generator, device=batch.device).item())
-        perm = torch.randperm(total_pixels, generator=generator, device=batch.device)[:masked_pixels]
+        modality = int(
+            torch.randint(
+                0,
+                channels,
+                (1,),
+                generator=generator,
+                device=batch.device,
+            ).item()
+        )
+        perm = torch.randperm(
+            total_pixels, generator=generator, device=batch.device
+        )[:masked_pixels]
         rows = torch.div(perm, width, rounding_mode="floor")
         cols = perm % width
         masked_input[sample_idx, modality, rows, cols] = 0.0
@@ -76,7 +87,9 @@ def masked_mae_loss(prediction, target, loss_mask):
     return (torch.abs(prediction - target) * loss_mask).sum() / masked_elements
 
 
-def run_pretraining_epoch(model, loader, optimizer, device, masker_fn, args, epoch_seed):
+def run_pretraining_epoch(
+    model, loader, optimizer, device, masker_fn, args, epoch_seed
+):
     """Run one optimization epoch for self-supervised reconstruction training."""
     model.train()
     total_loss = 0.0

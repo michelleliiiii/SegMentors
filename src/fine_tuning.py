@@ -1,5 +1,6 @@
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +33,9 @@ def soft_dice_loss(logits, target, num_classes, eps=1e-6, exclude_bg=True):
     return 1 - dice.mean()
 
 
-def run_segmentation_epoch(model, loader, optimizer, device, num_classes, w_ce, w_dice):
+def run_segmentation_epoch(
+    model, loader, optimizer, device, num_classes, w_ce, w_dice
+):
     """Run one supervised fine-tuning epoch on labeled segmentation data."""
     model.train()
     ce_criterion = nn.CrossEntropyLoss()
@@ -59,7 +62,15 @@ def run_segmentation_epoch(model, loader, optimizer, device, num_classes, w_ce, 
 
 
 @torch.no_grad()
-def run_segmentation_validation(model, loader, device, num_classes, w_ce, w_dice, save_predictions_dir=None):
+def run_segmentation_validation(
+    model,
+    loader,
+    device,
+    num_classes,
+    w_ce,
+    w_dice,
+    save_predictions_dir=None,
+):
     """Evaluate segmentation loss, Dice metrics, and optionally save predictions."""
     model.eval()
     ce_criterion = nn.CrossEntropyLoss()
@@ -74,11 +85,21 @@ def run_segmentation_validation(model, loader, device, num_classes, w_ce, w_dice
 
         logits = model(images)
         ce = ce_criterion(logits, masks)
-        dice_loss = soft_dice_loss(logits, masks, num_classes=num_classes, exclude_bg=True)
+        dice_loss = soft_dice_loss(
+            logits,
+            masks,
+            num_classes=num_classes,
+            exclude_bg=True,
+        )
         loss = w_ce * ce + w_dice * dice_loss
 
         predictions = torch.argmax(logits, dim=1)
-        batch_mean_dice, batch_class_dice = U.mean_dice(predictions, masks, num_classes=num_classes, exclude_bg=True)
+        batch_mean_dice, batch_class_dice = U.mean_dice(
+            predictions,
+            masks,
+            num_classes=num_classes,
+            exclude_bg=True,
+        )
 
         batch_size = images.size(0)
         total_loss += loss.item() * batch_size

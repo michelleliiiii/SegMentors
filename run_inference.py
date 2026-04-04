@@ -1,9 +1,15 @@
 from pathlib import Path
+import sys
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 import numpy as np
 import torch
+from matplotlib.colors import ListedColormap
+
+
+SRC_DIR = Path(__file__).resolve().parent / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from load_dataset import ensure_chw, normalize_tensor
 from unet2d import UNet2D
@@ -64,7 +70,9 @@ def infer_single_npy(model_path, input_npy, output_dir, device=None):
 
     with torch.no_grad():
         logits = model(image_tensor.unsqueeze(0).to(device))
-        prediction = torch.argmax(logits, dim=1).squeeze(0).cpu().numpy().astype(np.uint8)
+        prediction = (
+            torch.argmax(logits, dim=1).squeeze(0).cpu().numpy().astype(np.uint8)
+        )
 
     pred_path = output_dir / input_npy.name.replace("__img.npy", "__pred.npy")
     np.save(pred_path, prediction)

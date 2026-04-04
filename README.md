@@ -1,142 +1,39 @@
 # SegMentors
+Benchmarking self-supervised and semi-supervised learning approaches for
+2D pediatric brain tumor segmentation.
 
-SegMentors is a modular PyTorch repository for self-supervised and semi-supervised 2D pediatric brain tumor segmentation. The current pipeline uses a 2D U-Net backbone, masked reconstruction pretraining on mixed labeled and unlabeled MRI slices, and supervised fine-tuning on the labeled subset to predict segmentation masks for:
+### Branch Overview
+This branch provides a PyTorch pipeline to pretrain a 2D U-Net with masked
+reconstruction and fine-tune it for medical image segmentation on preprocessed
+MRI `.npy` slices.
 
-- `ET`
-- `NET`
-- `CC`
-- `ED`
+### Key Features and Usage
+1. Self-supervised training: Use `run_training.py` to run the full pipeline,
+   including reconstruction pretraining, supervised fine-tuning, checkpoint
+   saving, and test-set prediction export.
 
-The project is organized around preprocessed `.npy` slices where each image has shape `(4, H, W)` and each mask has shape `(H, W)`.
+2. Inference and visualization: Use `run_inference.py` to load a trained
+   checkpoint, run prediction on a single `.npy` slice, and generate an
+   overlay visualization against the ground-truth mask.
 
-## Overview
+3. Notebook workflow: Use `run_training_colab.ipynb` to run the training
+   pipeline in a notebook environment such as Google Colab.
 
-The training workflow has two stages:
+### Directory Structure
+- `/data`: Stores the train, validation, and test `.npy` images, masks, and
+  split manifests such as `ssl_split_manifest_15.csv`,
+  `ssl_split_manifest_20.csv`, and `ssl_split_manifest_25.csv`.
 
-1. Self-supervised pretraining:
-   The model reconstructs masked MRI content using the full U-Net encoder-decoder. The default pretext task masks modality-specific patches and asks the network to recover them from spatial and cross-modal context.
-2. Supervised fine-tuning:
-   The reconstruction head is replaced with a segmentation head, and the model is fine-tuned on the labeled training cases only.
+- `/outputs`: Stores training logs, checkpoints, loss curves, and exported test
+  predictions.
 
-The repository also includes fixed split manifests for different labeled-data regimes:
+- `/src`: Contains the core training modules, including dataset loading,
+  pretraining, fine-tuning, U-Net definition, and utility functions.
 
-- `ssl_split_manifest_15.csv`
-- `ssl_split_manifest_20.csv`
-- `ssl_split_manifest_25.csv`
+- `run_training.py`: Main script for the end-to-end self-supervised and
+  supervised training pipeline.
 
-## Repository Structure
+- `run_inference.py`: Helper functions for single-sample inference and
+  prediction visualization.
 
-- [`start_training.py`](start_training.py): main training entry point
-- [`load_dataset.py`](load_dataset.py): dataset loading, manifest filtering, and dataloaders
-- [`pretraining.py`](pretraining.py): masking strategies and SSL pretraining loops
-- [`fine_tuning.py`](fine_tuning.py): segmentation loss, validation, and prediction export
-- [`unet2d.py`](unet2d.py): 2D U-Net backbone with a replaceable output head
-- [`utils.py`](utils.py): shared utilities, metrics, checkpointing, and plotting
-- [`make_ssl_split.py`](make_ssl_split.py): helper for building a labeled/unlabeled manifest
-- [`ssl_unet2d_colab.ipynb`](ssl_unet2d_colab.ipynb): notebook version for Colab or Jupyter
-
-## Data Layout
-
-Expected folder structure:
-
-```text
-SegMentors/
-├── data/
-│   ├── train/
-│   │   ├── images/
-│   │   └── masks/
-│   ├── val/
-│   │   ├── images/
-│   │   └── masks/
-│   └── test/
-│       ├── images/
-│       └── masks/
-```
-
-Expected file naming:
-
-```text
-BraTS-PED-00001-000__000000__img.npy
-BraTS-PED-00001-000__000000__mask.npy
-```
-
-Where:
-
-- image arrays are `(4, H, W)`
-- mask arrays are `(H, W)`
-- the case ID is the prefix before the first `__`
-
-## Installation
-
-Create an environment and install the required packages.
-
-```bash
-conda install pytorch torchvision torchaudio cpuonly -c pytorch
-pip install numpy matplotlib tqdm
-```
-
-## Training
-
-Run the default pipeline:
-
-```bash
-python start_training.py
-```
-
-By default, this uses:
-
-- `data/` as the dataset root
-- `ssl_split_manifest_20.csv` as the labeled/unlabeled split
-- `outputs/ssl_unet2d/` as the output directory
-
-Example with a different manifest and output folder:
-
-```bash
-python start_training.py \
-  --manifest-csv ssl_split_manifest_25.csv \
-  --output-dir outputs/run_ssl_25
-```
-
-Useful arguments:
-
-- `--pretrain-epochs`
-- `--finetune-epochs`
-- `--batch-size`
-- `--pretrain-lr`
-- `--finetune-lr`
-- `--mask-ratio`
-- `--patch-size`
-- `--pretext-task`
-
-Available pretext tasks:
-
-- `cross_modal`
-- `random_channel_dropout`
-
-## Outputs
-
-Each training run writes to the selected output directory and typically includes:
-
-- `pretrain_best.pt`
-- `finetune_best.pt`
-- `training.log`
-- `loss_curves.png`
-- `test_predictions/`
-
-`test_predictions/` contains predicted `.npy` segmentation masks for the test split.
-
-## Jupyter / Colab
-
-If you prefer notebooks, open:
-
-- [`ssl_unet2d_colab.ipynb`](ssl_unet2d_colab.ipynb)
-
-The notebook provides cells for:
-
-- dependency installation
-- optional Google Drive mounting
-- path configuration
-- argument configuration
-- training execution
-- output inspection
-
+- `run_training_colab.ipynb`: Notebook pipeline for running training in Colab.

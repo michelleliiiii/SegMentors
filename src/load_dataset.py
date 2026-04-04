@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from utils import seed_worker
 
@@ -43,7 +43,11 @@ class BrainTumorNPYDataset(Dataset):
             raise FileNotFoundError(f"Missing folder: {self.mask_dir}")
 
         manifest_rows = load_split_manifest(manifest_csv)
-        allowed_cases = build_case_filters(manifest_rows, split=split, label_status=label_status)
+        allowed_cases = build_case_filters(
+            manifest_rows,
+            split=split,
+            label_status=label_status,
+        )
 
         samples = []
         for image_path in sorted(self.image_dir.glob("*.npy")):
@@ -51,7 +55,9 @@ class BrainTumorNPYDataset(Dataset):
             if allowed_cases and case_id not in allowed_cases:
                 continue
 
-            mask_path = self.mask_dir / image_path.name.replace("__img.npy", "__mask.npy")
+            mask_path = self.mask_dir / image_path.name.replace(
+                "__img.npy", "__mask.npy"
+            )
             if self.require_masks and not mask_path.exists():
                 continue
 
