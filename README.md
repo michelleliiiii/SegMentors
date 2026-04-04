@@ -134,11 +134,7 @@ Run student hyperparameter search:
 python random_search_student.py --trials 10
 ```
 
-Run the end-to-end teacher vs student comparison experiment:
 
-```bash
-python compare_teacher_student.py --seeds 0 1 2
-```
 
 ## Expected Files
 
