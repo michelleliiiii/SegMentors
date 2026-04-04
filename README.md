@@ -105,13 +105,13 @@ Important dependency:
 Evaluate the teacher:
 
 ```bash
-python evaluate.py --ckpt teacher_best.pt --split val --output-dir experiment_outputs/teacher_eval
+python evaluate.py --ckpt teacher_best.pt --split val --output-dir "your output directory here"
 ```
 
 Evaluate the student:
 
 ```bash
-python evaluate.py --ckpt student_best.pt --split val --output-dir experiment_outputs/student_eval
+python evaluate.py --ckpt student_best.pt --split val --output-dir "your output directory here"
 ```
 
 ## Optional Utilities
@@ -143,8 +143,6 @@ After a standard run, the main artifacts are:
 - `ssl_split_manifest.csv`
 - `teacher_best.pt`
 - `student_best.pt`
-- `experiment_outputs/...` for saved evaluation summaries
-- `teacher_probability_maps/...` for visualization outputs
 
 ## AI Statement
 
