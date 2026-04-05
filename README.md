@@ -7,14 +7,18 @@ This ECE324 project seeks to better understand the impacts of semi-supervised le
 
 ## Project Overview
 
+
 ## Repository Overview
-This GitHub Repository all code pertaining to:
+
+
+The main page of this GitHub Repository provides an overview of:
 - Preprocessing raw data files
 - Organizing and splitting data
 - Training the baseline U-Net
-- Visualizing model inference on the test set
+- Performing inference on the test set
 
-By the conclusion of this project, the GitHub will include the semi-supervised methodologies outlined in the interim report. 
+**To reproduce the SOTA, and any methodologies used in the project, please switch to the appropriate branch and check the README posted respectively.**
+
 
 ## Environment Setup
 To install the environment, run:
@@ -49,6 +53,19 @@ Additionally, the following script will append the processed masks into the corr
 
 ```bash
 python data_split.py
+```
+
+
+To simulate the data scarce regime, run the following script with the argument corresponding to the desired percentage of retained ground truths. Ex: Retain 20% ground truths:
+
+```bash
+python make_ssl_split.py --labeled_frac 0.2
+```
+
+To train a fully supervised baseline, simply retain all ground truths: 
+
+```bash
+python make_ssl_split.py --labeled_frac 1.0
 ```
 
 Training can be executed by running:
