@@ -30,7 +30,7 @@ python finetune_unet.py --seed 42 --ckpt /path/to/ckpt.pt
 Inferencing on test set:
 ```bash
 cd /path/to/SegMentors
-python inference.py --seed 42
+python inference.py --seed 42 --ckpt /path/to/ckpt.pt
 ```
 
 Now you can benchmark against the baseline at the SOTA. 
