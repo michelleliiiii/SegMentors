@@ -12,6 +12,21 @@ Pre-requisites:
 
 ## Train Pipeline
 
+First, we require bounding boxes for the train and validation set:
+
+```bash
+cd /path/to/SegMentors
+python bbox_inference --split train --ckpt ckpt.pt
+python bbox_inference --split val --ckpt ckpt.pt
+```
+
+Next, we must infer the bounding boxes for the unlabelled train set. 
+
+```bash
+cd /path/to/SegMentors
+python bbox_inference --split unlabeled_train --ckpt ckpt.pt
+```
+
 Open ```bash medsam.ipynb``` in colab. It can run locally, provided CUDA exists, but the paths will need to be adjusted. 
 
 Follow the instructions in medsam.ipynb
