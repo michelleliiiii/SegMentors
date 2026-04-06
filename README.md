@@ -24,7 +24,7 @@ Extract the pseudolabel masks to:
 From which you may run:
 ```bash
 cd /path/to/SegMentors
-python finetune_unet.py --seed 42
+python finetune_unet.py --seed 42 --ckpt /path/to/ckpt.pt
 ```
 
 Inferencing on test set:
