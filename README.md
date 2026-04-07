@@ -1,6 +1,6 @@
 # SegMentors
 
-**Benchmarking Semi-Supervised Learning Approaches to Increase Medical Image Segmentation Performance
+**Benchmarking Semi-Supervised Learning Approaches to Increase Medical Image Segmentation Performance**
 
 This ECE324 project seeks to better understand the impacts of semi-supervised learning in the task of medical segmentation. 
 
@@ -37,7 +37,7 @@ To preprocess the dataset, first download the raw images and masks from:
 https://drive.google.com/file/d/1ToWIOYik2N46K_0CHBOfxw-WXWn9KkN5/view?usp=share_link
 ```
 
-The patient coded folders should be extracted to the following directory
+The contents should be extracted to:
 ```bash
 /path/to/SegMentors/raw_data
 ```
