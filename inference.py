@@ -1,8 +1,6 @@
 import argparse
-import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from pathlib import Path
 from tqdm import tqdm
 
 from train_unet import NPYFolderDataset, get_device, mean_dice
