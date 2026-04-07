@@ -70,7 +70,7 @@ python make_ssl_split.py --labeled_frac 1.0
 
 Training can be executed by running:
 ```bash
-python train_unet.py
+python train_unet.py --seed 42
 ```
 
 Inferencing on the test set is achieved by running:
