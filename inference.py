@@ -14,6 +14,7 @@ def main(seed, ckpt):
     # -------------------------
     # Config
     # -------------------------
+    torch.manual_seed(seed)
     ckpt_path = ckpt
     data_root = "data"
     split = "test"
@@ -22,11 +23,11 @@ def main(seed, ckpt):
     device = get_device()
     print("Device:", device)
 
-    ckpt = torch.load(ckpt_path, map_location=device)
+    weights = torch.load(ckpt_path, map_location=device)
 
-    in_channels = ckpt["in_channels"]
-    num_classes = ckpt["num_classes"]
-    base = ckpt["base"]
+    in_channels = weights["in_channels"]
+    num_classes = weights["num_classes"]
+    base = weights["base"]
 
     print(f"Checkpoint loaded from: {ckpt_path}")
     print(f"in_channels={in_channels}, num_classes={num_classes}, base={base}")
