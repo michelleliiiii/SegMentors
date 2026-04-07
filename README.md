@@ -16,8 +16,8 @@ First, we require bounding boxes for the train and validation set:
 
 ```bash
 cd /path/to/SegMentors
-python bbox_inference --split train --ckpt ckpt.pt
-python bbox_inference --split val --ckpt ckpt.pt
+python bbox_inference.py --split train --ckpt ckpt.pt
+python bbox_inference.py --split val --ckpt ckpt.pt
 ```
 
 Next, we must infer the bounding boxes for the unlabelled train set. 
