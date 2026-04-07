@@ -34,7 +34,7 @@ conda activate unet2d-env
 To preprocess the dataset, first download the raw images and masks from: 
 
 ```bash
-https://www.cancerimagingarchive.net/collection/brats-peds/$0
+https://drive.google.com/file/d/1ToWIOYik2N46K_0CHBOfxw-WXWn9KkN5/view?usp=share_link
 ```
 
 The data should be stored under the directory
@@ -71,6 +71,11 @@ python make_ssl_split.py --labeled_frac 1.0
 Training can be executed by running:
 ```bash
 python train_unet.py
+```
+
+Inferencing on the test set is achieved by running:
+```bash
+python inference.py --ckpt ckpt.pt --seed 42
 ```
 
 
