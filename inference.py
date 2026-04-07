@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -9,11 +10,11 @@ from unet2d import UNet2D
 
 
 @torch.no_grad()
-def main():
+def main(seed, ckpt):
     # -------------------------
     # Config
     # -------------------------
-    ckpt_path = "unet2d_best.pt"
+    ckpt_path = ckpt
     data_root = "data"
     split = "test"
     batch_size = 8
@@ -30,7 +31,6 @@ def main():
     print(f"Checkpoint loaded from: {ckpt_path}")
     print(f"in_channels={in_channels}, num_classes={num_classes}, base={base}")
 
-
     model = UNet2D(
         in_channels=in_channels,
         num_classes=num_classes,
@@ -39,7 +39,6 @@ def main():
 
     model.load_state_dict(ckpt["model"])
     model.eval()
-
 
     test_ds = NPYFolderDataset(
         root=data_root,
@@ -56,7 +55,6 @@ def main():
 
     print("Number of test slices:", len(test_ds))
 
- 
     total_dice = 0.0
     total_seen = 0
 
@@ -84,4 +82,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--ckpt", type=str, required=True)
+    args = parser.parse_args()
+    main(args.seed, args.ckpt)
