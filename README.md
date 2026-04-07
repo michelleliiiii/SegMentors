@@ -31,7 +31,7 @@ conda activate unet2d-env
 
 ## Data & Train Pipeline
 
-To preprocess the dataset, first download the raw images and masks from: 
+To preprocess the dataset, first download the images and masks from: 
 
 ```bash
 https://drive.google.com/file/d/1ToWIOYik2N46K_0CHBOfxw-WXWn9KkN5/view?usp=share_link
@@ -39,7 +39,7 @@ https://drive.google.com/file/d/1ToWIOYik2N46K_0CHBOfxw-WXWn9KkN5/view?usp=share
 
 The contents should be extracted to:
 ```bash
-/path/to/SegMentors/raw_data
+/path/to/SegMentors/preprocessed_dataset
 ```
 
 From which you may run:
