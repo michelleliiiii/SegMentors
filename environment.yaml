@@ -1,6 +1,5 @@
 name: unet2d-env
 channels:
-  - pytorch
   - conda-forge
   - defaults
 
@@ -10,13 +9,12 @@ dependencies:
   - pandas
   - matplotlib
   - scikit-learn
+  - scipy
+  - tqdm
   - nibabel
-  - pytorch
-  - torchvision
-  - torchaudio
   - pip
   - pip:
+      - --index-url https://download.pytorch.org/whl/cu126
       - torch==2.9.1
       - torchvision==0.24.1
       - torchaudio==2.9.1
-      - --index-url https://download.pytorch.org/whl/cu126
