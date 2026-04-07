@@ -16,15 +16,15 @@ First, we require bounding boxes for the train and validation set:
 
 ```bash
 cd /path/to/SegMentors
-python bbox_inference.py --split train --ckpt ckpt.pt
-python bbox_inference.py --split val --ckpt ckpt.pt
+python bbox_inference.py --split train --seed 42
+python bbox_inference.py --split val --seed 42
 ```
 
 Next, we must infer the bounding boxes for the unlabelled train set. 
 
 ```bash
 cd /path/to/SegMentors
-python bbox_inference --split unlabeled_train --ckpt ckpt.pt
+python bbox_inference --split unlabeled_train --ckpt ckpt.pt --seed42
 ```
 
 Open ```bash medsam.ipynb``` in colab. It can run locally, provided CUDA exists, but the paths will need to be adjusted. 
@@ -39,13 +39,13 @@ Extract the pseudolabel masks to:
 From which you may run:
 ```bash
 cd /path/to/SegMentors
-python finetune_unet.py --seed 42 --ckpt /path/to/ckpt.pt
+python finetune_unet.py --ckpt ckpt.pt --seed 42
 ```
 
 Inferencing on test set:
 ```bash
 cd /path/to/SegMentors
-python inference.py --seed 42 --ckpt /path/to/ckpt.pt
+python inference.py --ckpt ckpt.pt --seed 42 
 ```
 
 Now you can benchmark against the baseline at the SOTA. 
