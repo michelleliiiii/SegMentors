@@ -170,5 +170,5 @@ def run_preprocessing(input_root, output_root, neg_ratio=0.1):
 if __name__ == "__main__":
     ROOT = Path(__file__).resolve().parents[1]
     INPUT_ROOT = ROOT / "raw_data/Training"
-    OUTPUT_ROOT = ROOT / "preprocessed_data"
+    OUTPUT_ROOT = ROOT / "preprocessed_dataset"
     run_preprocessing(INPUT_ROOT, OUTPUT_ROOT, neg_ratio=0.1)
