@@ -21,52 +21,6 @@ conda env create -f environment.yaml
 conda activate unet2d-env
 ```
 
-## Data Preparation
-
-Download the BraTS-PED raw data and place it under:
-
-```bash
-raw_data/Training
-```
-
-If you need to regenerate preprocessed slice `.npy` files from the raw NIfTI volumes:
-
-```bash
-python eda/data_preprocessing.py
-```
-
-The training scripts expect the final dataset layout below:
-
-```text
-data/
-  train/
-    images/
-    masks/
-  val/
-    images/
-    masks/
-  test/
-    images/
-    masks/
-```
-
-If your preprocessed case folders are stored under `preprocessed_dataset/preprocessed_dataset`, create the train/val/test split with:
-
-```bash
-python data_split.py
-```
-
-Then create the teacher-student manifest:
-
-```bash
-python make_ssl_split.py
-```
-
-Notes:
-
-- `make_ssl_split.py` marks 20% of training cases as labeled and the rest as unlabeled.
-- The teacher and student scripts both read `ssl_split_manifest.csv`.
-
 ## Running the Teacher-Student Model
 
 Run these commands from the repository root.
