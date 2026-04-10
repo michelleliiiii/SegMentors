@@ -27,7 +27,7 @@ cd /path/to/SegMentors
 python bbox_inference --split unlabeled_train --ckpt ckpt.pt --seed42
 ```
 
-Open ```bash medsam.ipynb``` in colab. It can run locally, provided CUDA exists, but the paths will need to be adjusted. 
+Open ```medsam.ipynb``` in colab. It can run locally, provided CUDA exists, but the paths will need to be adjusted. 
 
 Follow the instructions in medsam.ipynb
 

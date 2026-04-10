@@ -10,9 +10,7 @@ from unet2d import UNet2D
 
 
 MANIFEST_NAME = "ssl_split_manifest.csv"
-
 DATA_ROOT = Path("data")
-
 BBOX_MARGIN = 5
 SKIP_EMPTY_PREDICTIONS = True
 
@@ -84,7 +82,7 @@ def build_model(ckpt_path: Path, device):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--ckpt", type=str, required=True)
+    parser.add_argument("--ckpt", type=str, required=False, help="Required only for unlabelled_train")
     parser.add_argument(
         "--split",
         type=str,
@@ -96,72 +94,80 @@ def parse_args():
 
 def main():
     args = parse_args()
-
     run_dir = Path(".").resolve()
-
     manifest_path = run_dir / MANIFEST_NAME
-    ckpt_path = Path(args.ckpt)
-    if not ckpt_path.is_absolute():
-        ckpt_path = run_dir / ckpt_path
-
     out_root = run_dir
+    if args.split == "unlabelled_train":
+        bboxes_csv_path = out_root / f"bboxes.csv"
+    if args.split == "train":
+        bboxes_csv_path = out_root / f"bboxes_train.csv"
+    else:
+        bboxes_csv_path = out_root / f"bboxes_val.csv"
+
 
     if args.split in {"train", "unlabelled_train"}:
         images_dir = run_dir / DATA_ROOT / "train" / "images"
+        masks_dir = run_dir / DATA_ROOT / "train" / "masks"
     else:
         images_dir = run_dir / DATA_ROOT / "val" / "images"
+        masks_dir = run_dir / DATA_ROOT / "val" / "masks"
+
 
     if args.split in {"train", "unlabelled_train"} and not manifest_path.exists():
         raise FileNotFoundError(f"Missing manifest: {manifest_path}")
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
     if not images_dir.exists():
         raise FileNotFoundError(f"Missing images dir: {images_dir}")
 
-    bboxes_csv_path = out_root / "bboxes.csv"
-
+    model = None
+    model_info = "N/A (Using Ground Truth)"
     device = get_device()
-    model, model_info = build_model(ckpt_path, device)
+    
+    if args.split == "unlabelled_train":
+        if not args.ckpt:
+            raise ValueError("--ckpt is required when split is 'unlabelled_train'")
+        ckpt_path = Path(args.ckpt)
+        if not ckpt_path.is_absolute():
+            ckpt_path = run_dir / ckpt_path
+        model, model_info = build_model(ckpt_path, device)
+
 
     if args.split in {"train", "unlabelled_train"}:
         case_ids = read_case_ids_from_manifest(manifest_path, args.split)
-        if not case_ids:
-            raise RuntimeError(f"No case IDs found for split={args.split} in {MANIFEST_NAME}")
-
         all_img_paths = []
         for case_id in case_ids:
             all_img_paths.extend(find_case_image_paths(case_id, images_dir))
     else:
         all_img_paths = sorted(images_dir.glob("*__img.npy"))
 
-    if not all_img_paths:
-        raise RuntimeError(f"No image slices found for split={args.split}.")
-
     bbox_rows = []
-
-    pbar = tqdm(all_img_paths, desc=f"{args.split} slices")
     total_saved = 0
     total_empty = 0
 
+    pbar = tqdm(all_img_paths, desc=f"Processing {args.split}")
     for img_path in pbar:
         case_id = extract_case_id(img_path.name)
+        
+        if args.split == "unlabelled_train":
 
-        img = np.load(img_path).astype(np.float32)  # (H, W, C)
+            img = np.load(img_path).astype(np.float32)
+            mu = img.mean(axis=(0, 1), keepdims=True)
+            sd = img.std(axis=(0, 1), keepdims=True) + 1e-8
+            img_norm = (img - mu) / sd
+            x = torch.from_numpy(img_norm).permute(2, 0, 1).unsqueeze(0).contiguous().to(device)
 
-        if img.ndim != 3:
-            raise ValueError(f"Expected (H,W,C), got {img.shape} for {img_path}")
+            with torch.no_grad():
+                logits = model(x)
+                mask_data = torch.argmax(logits, dim=1)[0].cpu().numpy().astype(np.int64)
+        else:
 
-        mu = img.mean(axis=(0, 1), keepdims=True)
-        sd = img.std(axis=(0, 1), keepdims=True) + 1e-8
-        img_norm = (img - mu) / sd
+            mask_name = img_path.name.replace("__img.npy", "__mask.npy")
+            mask_path = masks_dir / mask_name
+            if not mask_path.exists():
+                print(f"Warning: Mask not found for {img_path.name}, skipping.")
+                continue
+            mask_data = np.load(mask_path)
 
-        x = torch.from_numpy(img_norm).permute(2, 0, 1).unsqueeze(0).contiguous().to(device)
-
-        with torch.no_grad():
-            logits = model(x)
-            pred_multiclass = torch.argmax(logits, dim=1)[0].cpu().numpy().astype(np.int64)
-
-        pred_binary = to_binary_mask(pred_multiclass)
+        pred_binary = to_binary_mask(mask_data)
         bbox_xyxy = get_bbox_xyxy_from_mask(pred_binary, margin=BBOX_MARGIN)
 
         if bbox_xyxy is None:
@@ -169,11 +175,8 @@ def main():
             if SKIP_EMPTY_PREDICTIONS:
                 continue
 
-        x_min = y_min = x_max = y_max = ""
-        bbox_str = ""
-        if bbox_xyxy is not None:
-            x_min, y_min, x_max, y_max = bbox_xyxy
-            bbox_str = f"[{x_min},{y_min},{x_max},{y_max}]"
+        x_min, y_min, x_max, y_max = bbox_xyxy if bbox_xyxy else ("", "", "", "")
+        bbox_str = f"[{x_min},{y_min},{x_max},{y_max}]" if bbox_xyxy else ""
 
         bbox_rows.append({
             "case_id": case_id,
@@ -186,31 +189,16 @@ def main():
         })
         total_saved += 1
 
+    # Save CSV
     with open(bboxes_csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=[
-                "case_id",
-                "slice_file",
-                "bbox_x_min",
-                "bbox_y_min",
-                "bbox_x_max",
-                "bbox_y_max",
-                "bbox_xyxy",
-            ],
-        )
+        writer = csv.DictWriter(f, fieldnames=["case_id", "slice_file", "bbox_x_min", "bbox_y_min", "bbox_x_max", "bbox_y_max", "bbox_xyxy"])
         writer.writeheader()
         writer.writerows(bbox_rows)
 
-    print("\nDone.")
-    print(f"Seed: {args.seed}")
-    print(f"Split: {args.split}")
-    print(f"Device: {device}")
-    print(f"Model info: {model_info}")
-    print(f"Images dir: {images_dir}")
-    print(f"Saved usable slices: {total_saved}")
-    print(f"Skipped empty predictions: {total_empty}")
-    print(f"BBoxes CSV: {bboxes_csv_path}")
+    print(f"\nDone. Split: {args.split} | Device: {device}")
+    print(f"Mode: {'Inference' if model else 'Ground Truth Loading'}")
+    print(f"Saved: {total_saved} | Empty: {total_empty}")
+    print(f"Output: {bboxes_csv_path}")
 
 
 if __name__ == "__main__":
