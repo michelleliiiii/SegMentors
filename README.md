@@ -34,7 +34,7 @@ conda activate unet2d-env
 To preprocess the dataset, first download the images and masks from: 
 
 ```bash
-https://drive.google.com/file/d/1ToWIOYik2N46K_0CHBOfxw-WXWn9KkN5/view?usp=share_link
+https://drive.google.com/file/d/1kJB3fzNcfxxdpPtRAo9wU0KjIRatK7Pr/view?usp=sharing
 ```
 
 The contents should be extracted to:
