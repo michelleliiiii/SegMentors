@@ -42,13 +42,6 @@ The contents should be extracted to:
 /path/to/SegMentors/preprocessed_dataset
 ```
 
-From which you may run:
-```bash
-cd eda
-python data_preprocessing.py
-```
-
-
 Additionally, the following script will append the processed masks into the correct folder structure and data split:
 
 ```bash
